@@ -3,6 +3,8 @@
 ## Purpose
 This tool assesses organizational readiness for AI adoption using a simple scoring model.
 
+Use it to capture a quick readiness baseline and identify the next best adoption actions.
+
 ## How it works
 Users respond to questions across key dimensions:
 - Leadership alignment
