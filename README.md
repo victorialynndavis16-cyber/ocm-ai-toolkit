@@ -3,6 +3,15 @@
 The OCM Diagnostic Agent is a Streamlit prototype for assessing AI adoption
 readiness and turning the results into practical change-management guidance.
 
+Use it to capture a quick readiness baseline and identify the next best adoption actions.
+
+## How it works
+Users respond to questions across key dimensions:
+- Leadership alignment
+- Decision-making clarity
+- Workforce capability
+- Governance maturity
+- Reinforcement mechanisms
 It collects context about an organization, change initiative, impacted audience,
 and AI use case, then scores five OCM readiness dimensions:
 
