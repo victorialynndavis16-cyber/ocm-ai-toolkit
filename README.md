@@ -13,13 +13,7 @@ Users respond to questions across key dimensions:
 - Governance maturity
 - Reinforcement mechanisms
 It collects context about an organization, change initiative, impacted audience,
-and AI use case, then scores five OCM readiness dimensions:
-
-- Leadership Alignment
-- Decision Velocity
-- Workforce Capability
-- Governance Maturity
-- Reinforcement Mechanisms
+and AI use case, then scores five OCM readiness dimensions.
 
 The app produces an overall readiness score, dimension scores, top constraints,
 recommended interventions, an executive summary, and a 90-minute workshop agenda.
