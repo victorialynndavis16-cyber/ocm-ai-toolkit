@@ -1,122 +1,128 @@
 import streamlit as st
 
-
-DIMENSIONS = {
-    "Strategy": "Clear goals, sponsorship, and a prioritized AI use-case portfolio.",
-    "Data": "Accessible, governed, and trusted data for AI-enabled workflows.",
-    "People": "Skills, role clarity, and change readiness across impacted teams.",
-    "Process": "Repeatable ways to test, launch, monitor, and improve AI solutions.",
-    "Risk": "Responsible AI controls for privacy, security, compliance, and quality.",
-}
-
-RECOMMENDATIONS = {
-    "Strategy": "Define two or three high-value use cases, name an executive sponsor, and agree on success metrics before scaling.",
-    "Data": "Inventory the data needed for priority use cases and close gaps in ownership, quality, and access.",
-    "People": "Create a role-based enablement plan so leaders, managers, and frontline teams know how AI changes their work.",
-    "Process": "Stand up a lightweight pilot process with intake, experiment reviews, launch criteria, and feedback loops.",
-    "Risk": "Document responsible AI guardrails and assign review owners for privacy, security, legal, and operational risks.",
-}
-
-ACTION_PLANS = {
-    "Strategy": [
-        "Confirm the business outcomes AI should support in the next 90 days.",
-        "Select one executive sponsor and one operational owner for each priority use case.",
-        "Create a value scorecard covering impact, feasibility, adoption risk, and measurement.",
-    ],
-    "Data": [
-        "Map the data sources required for each priority use case.",
-        "Assign data owners and define minimum quality checks before pilots begin.",
-        "Document access, privacy, and retention requirements for sensitive data.",
-    ],
-    "People": [
-        "Identify the roles most affected by the AI-enabled workflow.",
-        "Build targeted enablement for leaders, managers, practitioners, and support teams.",
-        "Create a feedback channel for employee concerns, training needs, and adoption blockers.",
-    ],
-    "Process": [
-        "Define a pilot intake and approval workflow.",
-        "Set launch criteria for accuracy, usability, adoption readiness, and support coverage.",
-        "Schedule post-launch reviews to measure value and capture improvements.",
-    ],
-    "Risk": [
-        "Create a responsible AI checklist for privacy, security, compliance, and human oversight.",
-        "Name reviewers for high-risk use cases before testing begins.",
-        "Define escalation steps for inaccurate, biased, unsafe, or unexpected AI outputs.",
-    ],
-}
+from skills import (
+    assess_readiness,
+    diagnose_constraints,
+    draft_executive_summary,
+    prepare_workshop_agenda,
+    recommend_interventions,
+)
 
 
-def readiness_band(score: float) -> tuple[str, str]:
-    if score >= 4:
-        return "Ready to scale", "Your foundations are strong. Focus on governance, measurement, and repeatable adoption."
-    if score >= 3:
-        return "Ready for focused pilots", "You have a workable base. Pick narrow pilots and close the biggest readiness gaps."
-    if score >= 2:
-        return "Needs preparation", "Build the basics before launching broad AI initiatives."
-    return "Early stage", "Start with alignment, education, and a small number of low-risk discovery activities."
-
-
-def executive_summary(scores: dict[str, int], band: str, lowest_dimension: str) -> str:
-    strongest_dimension = max(scores, key=scores.get)
-    return (
-        f"The organization is currently **{band.lower()}**. "
-        f"The strongest readiness area is **{strongest_dimension}**, while **{lowest_dimension}** "
-        "is the most important gap to address before expanding AI adoption."
-    )
+# These are the five OCM diagnostic dimensions used by the prototype.
+# The Streamlit interface asks the user to score each dimension from 1 to 5.
+DIMENSIONS = [
+    "Leadership Alignment",
+    "Decision Velocity",
+    "Workforce Capability",
+    "Governance Maturity",
+    "Reinforcement Mechanisms",
+]
 
 
 def main() -> None:
-    st.set_page_config(page_title="AI Adoption Readiness", page_icon="OCM", layout="wide")
+    # Streamlit page settings control the browser title, page icon, and layout.
+    st.set_page_config(
+        page_title="OCM Diagnostic Agent",
+        page_icon="OCM",
+        layout="wide",
+    )
 
-    st.title("AI Adoption Readiness App")
-    st.write("Assess organizational readiness across strategy, data, people, process, and risk.")
+    st.title("OCM Diagnostic Agent")
+    st.write(
+        "Assess AI adoption readiness, diagnose the top organizational constraints, "
+        "and generate practical OCM interventions."
+    )
 
-    scores = {}
-    with st.form("readiness_assessment"):
-        st.subheader("Readiness score")
-        for dimension, description in DIMENSIONS.items():
-            scores[dimension] = st.slider(
+    # The form collects the business context and readiness scores in one place.
+    # The diagnostic skills run only after the user submits the form.
+    with st.form("ocm_diagnostic_form"):
+        st.subheader("Diagnostic context")
+
+        organization_name = st.text_input(
+            "Organization or team name",
+            placeholder="Example: Enterprise Operations Team",
+        )
+        change_initiative = st.text_input(
+            "Change initiative",
+            placeholder="Example: AI-enabled service request triage",
+        )
+        impacted_audience = st.text_input(
+            "Impacted audience",
+            placeholder="Example: Service desk analysts and team leads",
+        )
+        ai_use_case = st.text_area(
+            "AI use case",
+            placeholder="Example: Use AI to summarize intake requests and recommend routing.",
+        )
+
+        st.subheader("Readiness scores")
+        st.caption("Use 1 for low readiness and 5 for high readiness.")
+
+        dimension_scores = {}
+        for dimension in DIMENSIONS:
+            dimension_scores[dimension] = st.slider(
                 dimension,
                 min_value=1,
                 max_value=5,
                 value=3,
-                help=description,
+                help="1 = low readiness, 5 = high readiness",
             )
 
-        notes = st.text_area(
-            "Context notes",
-            placeholder="Add business unit, audience, target use cases, or adoption concerns.",
-        )
-        submitted = st.form_submit_button("Calculate readiness")
+        submitted = st.form_submit_button("Run OCM diagnostic")
 
     if submitted:
-        average_score = sum(scores.values()) / len(scores)
-        band, guidance = readiness_band(average_score)
-        lowest_dimension = min(scores, key=scores.get)
+        # Store the context in a dictionary so it can be passed cleanly to skills.
+        context = {
+            "organization_name": organization_name,
+            "change_initiative": change_initiative,
+            "impacted_audience": impacted_audience,
+            "ai_use_case": ai_use_case,
+        }
 
-        metric_cols = st.columns(3)
-        metric_cols[0].metric("Overall score", f"{average_score:.1f} / 5")
-        metric_cols[1].metric("Readiness band", band)
-        metric_cols[2].metric("Priority gap", lowest_dimension)
+        # Run the five deterministic OCM Diagnostic Agent skills.
+        overall_score = assess_readiness(dimension_scores)
+        top_constraints = diagnose_constraints(dimension_scores)
+        interventions = recommend_interventions(top_constraints)
+        executive_summary = draft_executive_summary(
+            context,
+            overall_score,
+            dimension_scores,
+            top_constraints,
+        )
+        workshop_agenda = prepare_workshop_agenda(top_constraints)
 
-        st.subheader("Guidance")
-        st.markdown(executive_summary(scores, band, lowest_dimension))
-        st.write(guidance)
-        st.info(RECOMMENDATIONS[lowest_dimension])
+        st.subheader("Diagnostic outputs")
 
-        st.subheader("Recommended actions")
-        for action in ACTION_PLANS[lowest_dimension]:
-            st.checkbox(action, value=False)
+        metric_columns = st.columns(2)
+        metric_columns[0].metric("Overall readiness score", f"{overall_score:.1f} / 5")
+        metric_columns[1].metric("Top constraint", top_constraints[0])
 
-        st.subheader("Dimension detail")
-        for dimension, score in scores.items():
-            st.progress(score / 5, text=f"{dimension}: {score}/5")
+        st.subheader("Dimension scores")
+        for dimension, score in dimension_scores.items():
+            st.progress(score / 5, text=f"{dimension}: {score} / 5")
 
-        if notes.strip():
-            st.subheader("Notes")
-            st.write(notes)
+        st.subheader("Top constraints")
+        for constraint in top_constraints:
+            st.write(f"- {constraint}")
+
+        st.subheader("Recommended interventions")
+        for constraint, actions in interventions.items():
+            st.markdown(f"**{constraint}**")
+            for action in actions:
+                st.checkbox(action, value=False, key=f"{constraint}_{action}")
+
+        st.subheader("Executive summary")
+        st.markdown(executive_summary)
+
+        st.subheader("90-minute workshop agenda")
+        for agenda_item in workshop_agenda:
+            st.write(
+                f"**{agenda_item['time']} - {agenda_item['topic']}**: "
+                f"{agenda_item['purpose']}"
+            )
     else:
-        st.caption("Use the sliders and calculate readiness to see recommendations.")
+        st.caption("Complete the diagnostic form to generate OCM recommendations.")
 
 
 if __name__ == "__main__":
