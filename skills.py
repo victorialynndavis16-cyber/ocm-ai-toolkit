@@ -1,88 +1,143 @@
-# These recommendations are used by the agent when it finds the lowest-scoring
-# dimension, also called the top constraint.
-RECOMMENDED_ACTIONS = {
+# This file contains the deterministic "skills" for the OCM Diagnostic Agent.
+# There are no external AI calls yet. Each function uses simple Python logic so
+# new learners can read, edit, and extend the prototype.
+
+
+# OCM-oriented recommendations for each diagnostic dimension.
+# The app selects recommendations based on the lowest-scoring constraints.
+INTERVENTION_LIBRARY = {
     "Leadership Alignment": [
-        "Hold a leadership alignment session to define the AI adoption vision.",
-        "Name an executive sponsor and decision owner for each priority AI use case.",
-        "Create a simple scorecard that connects AI work to business outcomes.",
+        "Facilitate an executive alignment session to confirm the case for change, sponsor roles, and success measures.",
+        "Create a visible sponsor action plan with specific leadership messages, decisions, and engagement moments.",
+        "Translate the AI use case into business outcomes leaders can consistently reinforce.",
     ],
     "Decision Velocity": [
-        "Map the approval process for AI pilots and remove unnecessary handoffs.",
-        "Set decision rights for budget, data access, risk review, and launch approval.",
-        "Create a weekly blocker review for active AI experiments.",
+        "Clarify decision rights for funding, process changes, data access, risk review, and go-live approval.",
+        "Create a weekly decision forum to remove blockers and keep the AI initiative moving.",
+        "Document a lightweight pilot governance path so teams know how decisions will be made.",
     ],
     "Workforce Capability": [
-        "Build role-based training for leaders, managers, and impacted employees.",
-        "Create manager talking points for explaining AI-enabled workflow changes.",
-        "Set up office hours or coaching support for teams using new AI tools.",
+        "Segment impacted audiences by role and define the skills each group needs to adopt the AI-enabled workflow.",
+        "Build practical enablement materials such as role guides, manager talking points, and hands-on demos.",
+        "Create office hours or peer support channels so employees can ask questions as the change lands.",
     ],
     "Governance Maturity": [
-        "Create a responsible AI checklist for each pilot before launch.",
-        "Define review owners for privacy, security, legal, compliance, and quality.",
-        "Monitor AI outputs and user feedback after release.",
+        "Use a responsible AI checklist before pilots move into production or broad adoption.",
+        "Assign review owners for privacy, security, legal, compliance, operational risk, and model quality.",
+        "Define how AI outputs will be monitored, escalated, and improved after launch.",
     ],
     "Reinforcement Mechanisms": [
-        "Add AI adoption progress to existing leadership and team routines.",
-        "Collect employee feedback at 30, 60, and 90 days after launch.",
-        "Recognize teams that demonstrate safe, useful, and repeatable AI adoption.",
+        "Add adoption progress, risks, and wins to existing leadership routines and team meetings.",
+        "Define behavior-based adoption measures so teams know what good use looks like.",
+        "Recognize teams that demonstrate safe, useful, and repeatable AI-enabled ways of working.",
     ],
 }
 
 
-# Agent Skill 1:
-# Calculate the overall readiness score across every question in the assessment.
-def calculate_overall_readiness_score(all_scores: dict[str, list[int]]) -> float:
-    every_score = []
+def assess_readiness(dimension_scores: dict[str, int]) -> float:
+    """Calculate the overall readiness score across the five dimensions."""
+    # The overall score is the average of the dimension scores.
+    total_score = sum(dimension_scores.values())
+    number_of_dimensions = len(dimension_scores)
 
-    for question_scores in all_scores.values():
-        every_score.extend(question_scores)
-
-    return sum(every_score) / len(every_score)
+    return total_score / number_of_dimensions
 
 
-# Agent Skill 2:
-# Calculate one average score for each readiness dimension.
-def calculate_dimension_scores(all_scores: dict[str, list[int]]) -> dict[str, float]:
-    dimension_scores = {}
+def diagnose_constraints(
+    dimension_scores: dict[str, int],
+    number_of_constraints: int = 3,
+) -> list[str]:
+    """Return the lowest-scoring dimensions as the top OCM constraints."""
+    # Sort dimensions from lowest score to highest score.
+    # If two dimensions have the same score, Python keeps the original order.
+    sorted_dimensions = sorted(dimension_scores, key=dimension_scores.get)
 
-    for dimension, question_scores in all_scores.items():
-        dimension_scores[dimension] = sum(question_scores) / len(question_scores)
-
-    return dimension_scores
-
-
-# Agent Skill 3:
-# Find the lowest-scoring dimension. This is the top constraint because it is
-# the area most likely to limit AI adoption progress.
-def identify_top_constraint(dimension_scores: dict[str, float]) -> str:
-    return min(dimension_scores, key=dimension_scores.get)
+    # Return only the number of constraints requested by the caller.
+    return sorted_dimensions[:number_of_constraints]
 
 
-# Agent Skill 4:
-# Return recommended actions based on the top constraint.
-def generate_recommended_actions(top_constraint: str) -> list[str]:
-    return RECOMMENDED_ACTIONS[top_constraint]
+def recommend_interventions(top_constraints: list[str]) -> dict[str, list[str]]:
+    """Generate practical OCM interventions for each top constraint."""
+    interventions = {}
+
+    for constraint in top_constraints:
+        interventions[constraint] = INTERVENTION_LIBRARY[constraint]
+
+    return interventions
 
 
-# Agent Skill 5:
-# Create a short executive summary that a leader can quickly scan.
-def generate_executive_summary(
+def draft_executive_summary(
+    context: dict[str, str],
     overall_score: float,
-    dimension_scores: dict[str, float],
-    top_constraint: str,
+    dimension_scores: dict[str, int],
+    top_constraints: list[str],
 ) -> str:
+    """Draft a short executive-ready summary of the diagnostic results."""
+    # Pull context values out of the dictionary. If a field is blank, use a
+    # simple fallback phrase so the summary still reads cleanly.
+    organization_name = context.get("organization_name") or "the organization"
+    change_initiative = context.get("change_initiative") or "the change initiative"
+    impacted_audience = context.get("impacted_audience") or "the impacted audience"
+    ai_use_case = context.get("ai_use_case") or "the AI use case"
+
     strongest_dimension = max(dimension_scores, key=dimension_scores.get)
+    primary_constraint = top_constraints[0]
 
     if overall_score >= 4:
         readiness_level = "strong"
     elif overall_score >= 3:
         readiness_level = "moderate"
     else:
-        readiness_level = "early"
+        readiness_level = "early-stage"
 
     return (
-        f"The organization shows **{readiness_level} AI adoption readiness** "
-        f"with an overall score of **{overall_score:.1f} out of 5**. "
-        f"The strongest area is **{strongest_dimension}**, while the top constraint is "
-        f"**{top_constraint}**. Focus first on this constraint to improve adoption momentum."
+        f"**{organization_name}** shows **{readiness_level} readiness** for "
+        f"**{change_initiative}** with an overall score of **{overall_score:.1f} out of 5**. "
+        f"The diagnostic indicates that **{strongest_dimension}** is currently the strongest "
+        f"OCM condition, while **{primary_constraint}** is the most important constraint to "
+        f"address for **{impacted_audience}**. For the AI use case, **{ai_use_case}**, leaders "
+        "should focus first on the recommended interventions tied to the top constraints before "
+        "expanding adoption."
     )
+
+
+def prepare_workshop_agenda(top_constraints: list[str]) -> list[dict[str, str]]:
+    """Create a 90-minute workshop agenda focused on the top constraints."""
+    # The agenda is intentionally simple and deterministic. It gives change
+    # leaders a practical meeting structure they can reuse immediately.
+    primary_constraint = top_constraints[0]
+    secondary_constraint = top_constraints[1] if len(top_constraints) > 1 else "the next constraint"
+    tertiary_constraint = top_constraints[2] if len(top_constraints) > 2 else "sustainment risks"
+
+    return [
+        {
+            "time": "0-10 min",
+            "topic": "Set context and outcomes",
+            "purpose": "Confirm the AI use case, impacted audience, and decisions needed from the session.",
+        },
+        {
+            "time": "10-25 min",
+            "topic": "Review readiness diagnostic",
+            "purpose": "Discuss the overall score, dimension scores, and what they imply for adoption risk.",
+        },
+        {
+            "time": "25-45 min",
+            "topic": f"Deep dive on {primary_constraint}",
+            "purpose": "Identify root causes, owner gaps, and immediate actions for the top constraint.",
+        },
+        {
+            "time": "45-60 min",
+            "topic": f"Plan interventions for {secondary_constraint}",
+            "purpose": "Select practical OCM interventions and clarify who must be involved.",
+        },
+        {
+            "time": "60-75 min",
+            "topic": f"Address {tertiary_constraint}",
+            "purpose": "Confirm supporting actions needed to reduce adoption friction and sustain behavior change.",
+        },
+        {
+            "time": "75-90 min",
+            "topic": "Confirm owners, next steps, and leadership messages",
+            "purpose": "Assign owners, agree on timing, and define the executive message coming out of the workshop.",
+        },
+    ]
