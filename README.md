@@ -1,33 +1,49 @@
-# OCM Diagnostic Agent
+# EODI Diagnostic Prototype
 
-The OCM Diagnostic Agent is a Streamlit prototype for assessing AI adoption
-readiness and turning the results into practical change-management guidance.
+The Executive Operating Discipline Index (EODI) is a Streamlit prototype for
+assessing whether an executive team has the operating discipline required to
+convert AI capability into enterprise value.
 
-Use it to capture a quick readiness baseline and identify the next best adoption actions.
+The core thesis is constraint-based: AI value is limited by the weakest elements
+of the operating model. A company can have strong AI tools, but if decision
+velocity, incentives, talent mobility, capital reallocation, or executive fluency
+are weak, AI productivity will not reliably convert into economic outcomes.
 
-## How it works
-Users respond to questions across key dimensions:
-- Leadership alignment
-- Decision-making clarity
-- Workforce capability
-- Governance maturity
-- Reinforcement mechanisms
-It collects context about an organization, change initiative, impacted audience,
-and AI use case, then scores five OCM readiness dimensions.
+## Dimensions
 
-The app produces an overall readiness score, dimension scores, top constraints,
-recommended interventions, an executive summary, and a 90-minute workshop agenda.
+The app scores five EODI dimensions:
+
+- Decision Velocity
+- Incentive Alignment
+- Talent Redeployment
+- Capital Reallocation
+- Executive Fluency
+
+Each dimension includes four diagnostic questions scored on a 1-5 slider. The
+app averages each dimension, normalizes the result to 0-1, and calculates:
+
+- EODI Structural Integrity Score using the geometric mean
+- Average Maturity Score using a simple average
+- Constraint Stack showing the lowest three dimensions
+- Top Constraint
+- Value Conversion Risk
+- Executive summary
+- Recommended actions
+- 90-minute workshop agenda
 
 ## How the Files Work Together
 
-- `app.py` contains the Streamlit user interface. It collects inputs and displays
-  diagnostic outputs.
-- `skills.py` contains deterministic diagnostic functions for readiness scoring,
-  constraint diagnosis, recommendations, executive summaries, and workshop agendas.
+- `app.py` contains the Streamlit user interface. It collects context, captures
+  question-level slider responses, and displays diagnostic outputs.
+- `questions.py` contains the editable EODI dimension names, question wording,
+  helper text, scale labels, and reverse-scoring flags. Start here when changing
+  question wording or labels.
+- `skills.py` contains deterministic scoring, constraint diagnosis,
+  recommendations, executive summary, and workshop agenda logic.
 - `prompts.py` stores reusable text instructions for a future AI-enabled version
-  of the agent. The current app does not call an external AI API.
+  of the prototype. The current app does not call an external AI API.
 - `AGENTS.md` gives Codex repo-level guidance for keeping the prototype simple,
-  readable, and OCM-oriented.
+  readable, deterministic, and executive-ready.
 - `requirements.txt` lists the Python package needed to run the Streamlit app.
 
 ## Run in Replit
@@ -49,7 +65,7 @@ pip install -r requirements.txt
 5. Run the app:
 
 ```bash
-streamlit run app.py --server.address 0.0.0.0 --server.port 3000
+streamlit run app.py --server.address=0.0.0.0 --server.port=3000
 ```
 
 6. Open the Replit web preview.
@@ -57,15 +73,8 @@ streamlit run app.py --server.address 0.0.0.0 --server.port 3000
 ## Current Limitations
 
 - The prototype uses deterministic scoring logic only.
-- It does not call an external AI API.
-- Recommendations are based on the lowest-scoring readiness dimensions.
-- Workshop agendas are generated from a fixed structure.
+- It does not call external APIs.
 - Scores are directional and should be paired with stakeholder discussion.
-
-## Next Planned Enhancements
-
-- Add richer question-level scoring under each dimension.
-- Add downloadable diagnostic reports.
-- Add configurable intervention libraries by industry or function.
-- Add optional AI-generated summaries after guardrails are defined.
-- Add session storage or export options for workshop facilitation.
+- Recommended actions and agendas are generated from fixed templates.
+- Friction-oriented questions are reverse-scored so higher final scores always
+  indicate stronger operating discipline.
