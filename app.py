@@ -1,114 +1,128 @@
 import streamlit as st
 
 from skills import (
-    calculate_dimension_scores,
-    calculate_overall_readiness_score,
-    generate_executive_summary,
-    generate_recommended_actions,
-    identify_top_constraint,
+    assess_readiness,
+    diagnose_constraints,
+    draft_executive_summary,
+    prepare_workshop_agenda,
+    recommend_interventions,
 )
 
 
-# This dictionary defines the five readiness dimensions for the prototype.
-# Each dimension has three scored questions that will be shown as sliders.
-DIMENSIONS = {
-    "Leadership Alignment": [
-        "Leaders share a clear vision for how AI will support business outcomes.",
-        "Executive sponsors are actively involved in AI adoption decisions.",
-        "AI priorities are connected to the organization's strategic goals.",
-    ],
-    "Decision Velocity": [
-        "Teams can make timely decisions about AI opportunities and tradeoffs.",
-        "AI pilots have clear approval paths and decision owners.",
-        "Leaders can quickly remove blockers that slow AI adoption.",
-    ],
-    "Workforce Capability": [
-        "Employees understand how AI may change their day-to-day work.",
-        "Teams have access to practical AI training and support.",
-        "Managers are prepared to coach teams through AI-enabled change.",
-    ],
-    "Governance Maturity": [
-        "The organization has clear guidance for responsible AI use.",
-        "Privacy, security, legal, and compliance risks are reviewed before launch.",
-        "AI solutions are monitored for quality, accuracy, and unintended impacts.",
-    ],
-    "Reinforcement Mechanisms": [
-        "AI adoption goals are reinforced through communication and leadership routines.",
-        "Teams collect feedback after AI tools are introduced.",
-        "Successful AI behaviors are recognized, measured, and sustained over time.",
-    ],
-}
+# These are the five OCM diagnostic dimensions used by the prototype.
+# The Streamlit interface asks the user to score each dimension from 1 to 5.
+DIMENSIONS = [
+    "Leadership Alignment",
+    "Decision Velocity",
+    "Workforce Capability",
+    "Governance Maturity",
+    "Reinforcement Mechanisms",
+]
 
 
 def main() -> None:
-    # Page setup controls the browser tab title, page icon, and layout width.
+    # Streamlit page settings control the browser title, page icon, and layout.
     st.set_page_config(
-        page_title="AI Adoption Readiness Agent",
-        page_icon="AI",
+        page_title="OCM Diagnostic Agent",
+        page_icon="OCM",
         layout="wide",
     )
 
-    st.title("AI Adoption Readiness Agent")
+    st.title("OCM Diagnostic Agent")
     st.write(
-        "Use this prototype to score AI adoption readiness, identify the top constraint, "
-        "and generate practical next actions."
+        "Assess AI adoption readiness, diagnose the top organizational constraints, "
+        "and generate practical OCM interventions."
     )
 
-    # This dictionary will store the user's slider scores for each dimension.
-    assessment_scores = {}
+    # The form collects the business context and readiness scores in one place.
+    # The diagnostic skills run only after the user submits the form.
+    with st.form("ocm_diagnostic_form"):
+        st.subheader("Diagnostic context")
 
-    # A Streamlit form keeps the assessment tidy and only runs the analysis after
-    # the user clicks the submit button.
-    with st.form("ai_readiness_assessment"):
-        st.subheader("Readiness assessment")
-
-        for dimension, questions in DIMENSIONS.items():
-            st.markdown(f"### {dimension}")
-            assessment_scores[dimension] = []
-
-            for question_number, question in enumerate(questions, start=1):
-                score = st.slider(
-                    label=question,
-                    min_value=1,
-                    max_value=5,
-                    value=3,
-                    help="1 = low readiness, 5 = high readiness",
-                    key=f"{dimension}_{question_number}",
-                )
-                assessment_scores[dimension].append(score)
-
-        submitted = st.form_submit_button("Run readiness agent")
-
-    if submitted:
-        # Run the five agent skills after the user submits the assessment.
-        overall_score = calculate_overall_readiness_score(assessment_scores)
-        dimension_scores = calculate_dimension_scores(assessment_scores)
-        top_constraint = identify_top_constraint(dimension_scores)
-        recommended_actions = generate_recommended_actions(top_constraint)
-        summary = generate_executive_summary(
-            overall_score,
-            dimension_scores,
-            top_constraint,
+        organization_name = st.text_input(
+            "Organization or team name",
+            placeholder="Example: Enterprise Operations Team",
+        )
+        change_initiative = st.text_input(
+            "Change initiative",
+            placeholder="Example: AI-enabled service request triage",
+        )
+        impacted_audience = st.text_input(
+            "Impacted audience",
+            placeholder="Example: Service desk analysts and team leads",
+        )
+        ai_use_case = st.text_area(
+            "AI use case",
+            placeholder="Example: Use AI to summarize intake requests and recommend routing.",
         )
 
-        st.subheader("Agent results")
+        st.subheader("Readiness scores")
+        st.caption("Use 1 for low readiness and 5 for high readiness.")
+
+        dimension_scores = {}
+        for dimension in DIMENSIONS:
+            dimension_scores[dimension] = st.slider(
+                dimension,
+                min_value=1,
+                max_value=5,
+                value=3,
+                help="1 = low readiness, 5 = high readiness",
+            )
+
+        submitted = st.form_submit_button("Run OCM diagnostic")
+
+    if submitted:
+        # Store the context in a dictionary so it can be passed cleanly to skills.
+        context = {
+            "organization_name": organization_name,
+            "change_initiative": change_initiative,
+            "impacted_audience": impacted_audience,
+            "ai_use_case": ai_use_case,
+        }
+
+        # Run the five deterministic OCM Diagnostic Agent skills.
+        overall_score = assess_readiness(dimension_scores)
+        top_constraints = diagnose_constraints(dimension_scores)
+        interventions = recommend_interventions(top_constraints)
+        executive_summary = draft_executive_summary(
+            context,
+            overall_score,
+            dimension_scores,
+            top_constraints,
+        )
+        workshop_agenda = prepare_workshop_agenda(top_constraints)
+
+        st.subheader("Diagnostic outputs")
 
         metric_columns = st.columns(2)
         metric_columns[0].metric("Overall readiness score", f"{overall_score:.1f} / 5")
-        metric_columns[1].metric("Top constraint", top_constraint)
+        metric_columns[1].metric("Top constraint", top_constraints[0])
+
+        st.subheader("Dimension scores")
+        for dimension, score in dimension_scores.items():
+            st.progress(score / 5, text=f"{dimension}: {score} / 5")
+
+        st.subheader("Top constraints")
+        for constraint in top_constraints:
+            st.write(f"- {constraint}")
+
+        st.subheader("Recommended interventions")
+        for constraint, actions in interventions.items():
+            st.markdown(f"**{constraint}**")
+            for action in actions:
+                st.checkbox(action, value=False, key=f"{constraint}_{action}")
 
         st.subheader("Executive summary")
-        st.markdown(summary)
+        st.markdown(executive_summary)
 
-        st.subheader("Dimension-level scores")
-        for dimension, score in dimension_scores.items():
-            st.progress(score / 5, text=f"{dimension}: {score:.1f} / 5")
-
-        st.subheader("Recommended actions")
-        for action in recommended_actions:
-            st.checkbox(action, value=False)
+        st.subheader("90-minute workshop agenda")
+        for agenda_item in workshop_agenda:
+            st.write(
+                f"**{agenda_item['time']} - {agenda_item['topic']}**: "
+                f"{agenda_item['purpose']}"
+            )
     else:
-        st.caption("Complete the sliders and run the readiness agent to see results.")
+        st.caption("Complete the diagnostic form to generate OCM recommendations.")
 
 
 if __name__ == "__main__":
